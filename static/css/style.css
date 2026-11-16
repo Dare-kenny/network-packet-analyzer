@@ -1,0 +1,498 @@
+:root {
+  --bg: #0f1117;
+  --panel: #171a23;
+  --border: #2a2f3d;
+  --text: #e6e8ee;
+  --muted: #9aa0ae;
+  --accent: #4f8cff;
+  --tcp: #4f8cff;
+  --udp: #35c98f;
+  --icmp: #e6b74f;
+  --other: #9aa0ae;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* The browser's own [hidden] rule is display:none, but any author rule
+   that sets display -- .notice is display:flex -- outranks it and leaves
+   the element on screen while it is marked hidden. This keeps the
+   attribute authoritative for every element on the page. */
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  padding: 24px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, sans-serif;
+}
+
+header h1 {
+  margin: 0 0 4px 0;
+  font-size: 22px;
+}
+
+.subtitle {
+  margin: 0 0 20px 0;
+  color: var(--muted);
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+select, button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #1f232f;
+  color: var(--text);
+  font-size: 14px;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button#start-btn {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.status {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.table-wrap {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+thead th {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+tbody td {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+tbody tr.packet-row {
+  cursor: pointer;
+}
+
+tbody tr.packet-row:hover {
+  background: #1c2130;
+}
+
+.proto-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.proto-TCP { background: rgba(79, 140, 255, 0.15); color: var(--tcp); }
+.proto-UDP { background: rgba(53, 201, 143, 0.15); color: var(--udp); }
+.proto-ICMP { background: rgba(230, 183, 79, 0.15); color: var(--icmp); }
+.proto-other { background: rgba(154, 160, 174, 0.15); color: var(--other); }
+
+tr.detail-row td {
+  background: #12141c;
+  padding: 12px;
+}
+
+tr.detail-row pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 12px;
+  color: var(--muted);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+/* ---------------------------------------------------------------- */
+/* Milestone 3: analysis panels                                     */
+/* ---------------------------------------------------------------- */
+
+:root {
+  /* Series colours for chart marks on the --panel surface. Same hues as
+     the protocol tags above, stepped for the dark surface and validated
+     as a categorical set (lightness band, chroma floor, CVD separation,
+     normal-vision floor, 3:1 contrast). The tag colours stay lighter
+     because they are read as text, not as a fill. */
+  --series-tcp: #3987e5;
+  --series-udp: #199e70;
+  --series-icmp: #c98500;
+  --series-other: #6f7585;
+
+  /* Single hue for ranked volume bars: magnitude, not identity, so it
+     must not reuse a protocol colour. */
+  --series-volume: #9085e9;
+
+  /* Reserved status colour: never used for a series. */
+  --warning: #fab219;
+  --critical: #d03b3b;
+
+  --track: #232834;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* KPI row --------------------------------------------------------- */
+
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.stat-label {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Panels ---------------------------------------------------------- */
+
+.analysis-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* Panels carry their own bottom margin for when they stand alone. Inside
+   the grid the gap already separates them, so the margin would stack on
+   top of it and open a double gap under the row. */
+.analysis-grid .panel {
+  margin-bottom: 0;
+}
+
+@media (max-width: 900px) {
+  .kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .analysis-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.panel {
+  padding: 12px 16px 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.panel h2 {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.empty-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Meter lists: a name, a bar and a figure per row ------------------ */
+
+.meter-list {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.meter-list thead th {
+  text-align: left;
+  padding: 0 10px 6px 0;
+  /* Hairline, solid, recessive. */
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.meter-list tbody td {
+  padding: 7px 10px 7px 0;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.meter-list tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.meter-list .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  padding-right: 0;
+  white-space: nowrap;
+}
+
+.meter-list td.name {
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meter-list td.meter-cell {
+  width: 45%;
+  min-width: 90px;
+}
+
+/* The bar: grows from one baseline, 4px rounded data-end, square at
+   the baseline, capped well under the 24px mark ceiling. */
+.meter-track {
+  position: relative;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--track);
+  overflow: hidden;
+}
+
+.meter-fill {
+  height: 100%;
+  border-radius: 0 4px 4px 0;
+  background: var(--series-volume);
+  min-width: 2px;
+}
+
+.meter-fill.proto-fill-TCP { background: var(--series-tcp); }
+.meter-fill.proto-fill-UDP { background: var(--series-udp); }
+.meter-fill.proto-fill-ICMP { background: var(--series-icmp); }
+.meter-fill.proto-fill-other { background: var(--series-other); }
+
+.meter-pct {
+  display: inline-block;
+  min-width: 46px;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.meter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.meter-row .meter-track {
+  flex: 1;
+}
+
+/* Anomalies: status colour always paired with an icon and a label --- */
+
+.anomaly-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.anomaly-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(250, 178, 25, 0.08);
+  border-left: 3px solid var(--warning);
+  font-size: 13px;
+}
+
+.anomaly-icon {
+  color: var(--warning);
+  font-weight: 700;
+  flex: none;
+}
+
+.anomaly-kind {
+  color: var(--warning);
+  font-weight: 600;
+  flex: none;
+}
+
+.anomaly-detail {
+  color: var(--text);
+}
+
+#save-btn:not(:disabled) {
+  border-color: var(--border);
+}
+
+/* Readiness notice ------------------------------------------------ */
+
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background: rgba(250, 178, 25, 0.08);
+  border: 1px solid rgba(250, 178, 25, 0.35);
+  border-left: 3px solid var(--warning);
+  border-radius: 8px;
+}
+
+.notice.blocking {
+  background: rgba(208, 59, 59, 0.08);
+  border-color: rgba(208, 59, 59, 0.35);
+  border-left-color: var(--critical);
+}
+
+.notice-icon {
+  color: var(--warning);
+  font-size: 16px;
+  line-height: 1.4;
+  flex: none;
+}
+
+.notice.blocking .notice-icon {
+  color: var(--critical);
+}
+
+.notice-body {
+  min-width: 0;
+}
+
+.notice-title {
+  margin: 0 0 6px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.notice-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.notice-list li {
+  color: var(--text);
+}
+
+.notice-fix {
+  display: block;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.notice-fix code {
+  background: #1f232f;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+/* Resolved hostnames ---------------------------------------------- */
+
+.meter-list td.name {
+  line-height: 1.3;
+}
+
+.host-address {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Secondary line: present only when a name has resolved, so it must not
+   change the row's height enough to make the table jump. */
+.host-name {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.anomaly-names {
+  display: block;
+  width: 100%;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.anomaly-item {
+  flex-wrap: wrap;
+}

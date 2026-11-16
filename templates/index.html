@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Network Packet Analyzer</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <header>
+    <h1>Network Packet Analyzer</h1>
+    <p class="subtitle">Live capture and traffic summary</p>
+  </header>
+
+  <section class="notice" id="readiness-notice" hidden>
+    <span class="notice-icon" aria-hidden="true">&#9888;</span>
+    <div class="notice-body">
+      <p class="notice-title" id="readiness-title"></p>
+      <ul class="notice-list" id="readiness-list"></ul>
+    </div>
+  </section>
+
+  <section class="controls">
+    <label for="iface-select">Adapter</label>
+    <select id="iface-select">
+      {% for iface in interfaces %}
+      <option value="{{ iface.name }}">
+        {{ iface.name }} &mdash; {{ iface.description }}
+        {%- if iface.connected %} ({{ iface.ip }}){% else %} (not connected){% endif %}
+      </option>
+      {% else %}
+      <option value="" disabled>No network adapters found</option>
+      {% endfor %}
+    </select>
+
+    <button id="start-btn">Start</button>
+    <button id="stop-btn" disabled>Stop</button>
+    <button id="save-btn" disabled>Save .pcap</button>
+
+    <span id="status-text" class="status">Idle</span>
+  </section>
+
+  <section class="kpi-row" aria-label="Capture totals">
+    <div class="stat-tile">
+      <span class="stat-label">Packets</span>
+      <span class="stat-value" id="stat-packets">0</span>
+    </div>
+    <div class="stat-tile">
+      <span class="stat-label">Volume</span>
+      <span class="stat-value" id="stat-bytes">0 B</span>
+    </div>
+    <div class="stat-tile">
+      <span class="stat-label">Hosts</span>
+      <span class="stat-value" id="stat-hosts">0</span>
+    </div>
+    <div class="stat-tile">
+      <span class="stat-label">Packets / sec</span>
+      <span class="stat-value" id="stat-rate">0</span>
+    </div>
+  </section>
+
+  <section class="panel" id="anomaly-panel" hidden aria-label="Anomalies">
+    <h2>Anomalies</h2>
+    <ul class="anomaly-list" id="anomaly-list"></ul>
+  </section>
+
+  <div class="analysis-grid">
+    <section class="panel" aria-labelledby="proto-heading">
+      <h2 id="proto-heading">Protocol breakdown</h2>
+      <table class="meter-list" id="protocol-list">
+        <caption class="sr-only">Packets and share of capture by protocol</caption>
+        <thead>
+          <tr>
+            <th scope="col">Protocol</th>
+            <th scope="col">Share</th>
+            <th scope="col" class="num">Packets</th>
+            <th scope="col" class="num">Bytes</th>
+          </tr>
+        </thead>
+        <tbody id="protocol-body"></tbody>
+      </table>
+      <p class="empty-note" id="protocol-empty">No packets captured yet.</p>
+    </section>
+
+    <section class="panel" aria-labelledby="talkers-heading">
+      <h2 id="talkers-heading">Top talkers</h2>
+      <table class="meter-list" id="talker-list">
+        <caption class="sr-only">Hosts ranked by total bytes sent and received</caption>
+        <thead>
+          <tr>
+            <th scope="col">Host</th>
+            <th scope="col">Volume</th>
+            <th scope="col" class="num">Sent</th>
+            <th scope="col" class="num">Received</th>
+            <th scope="col" class="num">Peers</th>
+          </tr>
+        </thead>
+        <tbody id="talker-body"></tbody>
+      </table>
+      <p class="empty-note" id="talker-empty">No packets captured yet.</p>
+    </section>
+  </div>
+
+  <section class="table-wrap">
+    <table id="packet-table">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Source</th>
+          <th>Destination</th>
+          <th>Protocol</th>
+          <th>Port</th>
+          <th>Size</th>
+        </tr>
+      </thead>
+      <tbody id="packet-body">
+      </tbody>
+    </table>
+  </section>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
